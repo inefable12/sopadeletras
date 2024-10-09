@@ -1,5 +1,6 @@
 import streamlit as st
 import numpy as np
+import pandas as pd
 import random
 
 # Definir una función para generar la sopa de letras
@@ -57,9 +58,11 @@ for palabra in palabras:
 # Generar la sopa de letras
 sopa = generar_sopa(palabras)
 
-# Mostrar la sopa de letras
-for fila in sopa:
-    st.write(" ".join(fila))
+# Convertir la sopa de letras en un DataFrame para mostrarla mejor
+sopa_df = pd.DataFrame(sopa)
+
+# Mostrar la sopa de letras como un DataFrame
+st.dataframe(sopa_df)
 
 # Almacenar palabras encontradas por el usuario
 palabras_encontradas = st.multiselect("Selecciona las palabras encontradas:", palabras)
