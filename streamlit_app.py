@@ -1,69 +1,74 @@
 import streamlit as st
-import random
 import numpy as np
+import random
 
-# Función para generar una sopa de letras
-def generar_sopa_de_letras(palabras, tamaño=10):
-    sopa = np.random.choice(list('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), (tamaño, tamaño))
+# Definir una función para generar la sopa de letras
+def generar_sopa(palabras, tamaño=10):
+    sopa = np.full((tamaño, tamaño), '.', dtype=str)
+    direcciones = [(0,1), (1,0), (1,1), (-1,1)]
+    
     for palabra in palabras:
-        palabra = palabra.upper()
         colocada = False
-        intentos = 0
-        while not colocada and intentos < 100:
-            direccion = random.choice(['H', 'V', 'D'])
-            if direccion == 'H':
-                fila = random.randint(0, tamaño - 1)
-                col = random.randint(0, tamaño - len(palabra))
-                if all([sopa[fila, col+i] in ('', palabra[i]) for i in range(len(palabra))]):
-                    for i in range(len(palabra)):
-                        sopa[fila, col+i] = palabra[i]
-                    colocada = True
-            elif direccion == 'V':
-                fila = random.randint(0, tamaño - len(palabra))
-                col = random.randint(0, tamaño - 1)
-                if all([sopa[fila+i, col] in ('', palabra[i]) for i in range(len(palabra))]):
-                    for i in range(len(palabra)):
-                        sopa[fila+i, col] = palabra[i]
-                    colocada = True
-            elif direccion == 'D':
-                fila = random.randint(0, tamaño - len(palabra))
-                col = random.randint(0, tamaño - len(palabra))
-                if all([sopa[fila+i, col+i] in ('', palabra[i]) for i in range(len(palabra))]):
-                    for i in range(len(palabra)):
-                        sopa[fila+i, col+i] = palabra[i]
-                    colocada = True
-            intentos += 1
+        while not colocada:
+            fila = random.randint(0, tamaño-1)
+            col = random.randint(0, tamaño-1)
+            direccion = random.choice(direcciones)
+            if puede_colocar(palabra, sopa, fila, col, direccion):
+                colocar_palabra(palabra, sopa, fila, col, direccion)
+                colocada = True
+    
+    # Completar con letras aleatorias
+    for i in range(tamaño):
+        for j in range(tamaño):
+            if sopa[i][j] == '.':
+                sopa[i][j] = chr(random.randint(65, 90))  # Letras mayúsculas aleatorias
+
     return sopa
 
-# Función principal de la app
-def main():
-    st.title("Generador de Sopa de Letras")
-    
-    # Botón para cargar archivo
-    archivo = st.file_uploader("Cargar archivo de texto", type=["txt"])
-    
-    if archivo is not None:
-        palabras = archivo.read().decode("utf-8").splitlines()
-        palabras = [palabra.strip() for palabra in palabras if palabra.strip()]
-        
-        # Mostrar palabras
-        st.write("Palabras para buscar en la sopa:")
-        st.write(", ".join(palabras))
-        
-        # Generar la sopa de letras
-        tamaño = max(len(max(palabras, key=len)), 10)  # Ajustar tamaño
-        sopa = generar_sopa_de_letras(palabras, tamaño=tamaño)
-        
-        # Mostrar la sopa de letras
-        st.write("Sopa de letras:")
-        st.write('\n'.join([' '.join(fila) for fila in sopa]))
+# Verificar si se puede colocar la palabra en la posición
+def puede_colocar(palabra, sopa, fila, col, direccion):
+    for i in range(len(palabra)):
+        nueva_fila = fila + i * direccion[0]
+        nueva_col = col + i * direccion[1]
+        if nueva_fila < 0 or nueva_fila >= sopa.shape[0] or nueva_col < 0 or nueva_col >= sopa.shape[1]:
+            return False
+        if sopa[nueva_fila][nueva_col] != '.' and sopa[nueva_fila][nueva_col] != palabra[i]:
+            return False
+    return True
 
-        # Aquí puedes implementar una interfaz interactiva con PyDeck o algún módulo adicional si deseas que el usuario marque palabras
+# Colocar la palabra en la sopa
+def colocar_palabra(palabra, sopa, fila, col, direccion):
+    for i in range(len(palabra)):
+        nueva_fila = fila + i * direccion[0]
+        nueva_col = col + i * direccion[1]
+        sopa[nueva_fila][nueva_col] = palabra[i]
 
-        # Cuando el usuario termina, mostrar globos
-        if st.button("He terminado la sopa"):
-            st.balloons()
+# Definir la interfaz de Streamlit
+st.title("Sopa de Letras Interactiva")
+st.write("Encuentra las siguientes palabras:")
 
-# Ejecutar la app
-if __name__ == "__main__":
-    main()
+# Definir las palabras a buscar
+palabras = ["PYTHON", "STREAMLIT", "CODIGO", "GITHUB", "IA"]
+
+# Mostrar las palabras
+for palabra in palabras:
+    st.write(f"- {palabra}")
+
+# Generar la sopa de letras
+sopa = generar_sopa(palabras)
+
+# Mostrar la sopa de letras
+for fila in sopa:
+    st.write(" ".join(fila))
+
+# Almacenar palabras encontradas por el usuario
+palabras_encontradas = st.multiselect("Selecciona las palabras encontradas:", palabras)
+
+# Puntaje
+puntaje = len(palabras_encontradas)
+st.write(f"Puntaje: {puntaje}/{len(palabras)}")
+
+# Mostrar globos si todas las palabras son encontradas
+if puntaje == len(palabras):
+    st.balloons()
+    st.write("¡Felicidades! Has encontrado todas las palabras.")
